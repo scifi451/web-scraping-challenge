@@ -1,2 +1,2 @@
-# web-scraping-challenge.
+# web-scraping-challenge
 Homework 12
