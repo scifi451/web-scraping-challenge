@@ -60,7 +60,16 @@ def scrape_info():
     #Convert Pandas's DF to HTML Table
     mars_facts_html = mars_facts.to_html('mars_facts_table.html', index=False, justify="center")
 
+    #Getting Hemisphere images
     hemisphere_image_urls = []
+    #Going to the main page for the Mars Hemisphere's
+    url = 'https://astrogeology.usgs.gov/search/results?q=hemisphere+enhanced&k1=target&v1=Mars'
+    browser.visit(url)
+    # HTML object
+    html = browser.html
+    # Parse HTML with Beautiful Soup
+    soup = bs(html, 'html.parser')   
+
     #get a list of all the hemispheres
     url_links = browser.find_by_css("a.product-item h3")
 
@@ -83,12 +92,6 @@ def scrape_info():
 
         #Finally navigate back to start again on loop
         browser.back()
-    # Store data in a dictionary
-    mars_data = {
-        "title": title,
-        "desc": desc,
-        "featured_image": featured_image,
-        "mars_weather": mars_weather}
 
     # Close the browser after scraping
     browser.quit()
