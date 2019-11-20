@@ -1,5 +1,6 @@
 from splinter import Browser
 from bs4 import BeautifulSoup as bs
+import time
 
 
 def init_browser():
@@ -8,19 +9,91 @@ def init_browser():
     return Browser("chrome", **executable_path, headless=False)
 
 
-def scrape():
+def scrape_info():
     browser = init_browser()
-    news_results = {}
 
+    # Visit visitcostarica.herokuapp.com
     url = "https://mars.nasa.gov/news/"
     browser.visit(url)
 
+    time.sleep(1)
+
+    # Scrape page into Soup
     html = browser.html
-    soup = bs(html, "html.parser")
+    result = bs(html, "html.parser")
 
-    news_results["title"] =  soup.find_all(class_="slide").find('div', class_='content_title')
-    news_results["desc"] = result.find('div', class_='rollover_description_inner')
-    news_results["news_title"] = title.a.text
-    news_results["news_p"] = desc.text
+    #Get Headline and description of news item.
+    title = result.find('div', class_='content_title')
+    desc = result.find('div', class_='rollover_description_inner')
 
-    return results
+    #Capturing featured image
+    url = 'https://www.jpl.nasa.gov/spaceimages/?search=&category=Mars'
+    # Retrieve page with the requests module
+    response = requests.get(url)
+
+    # Create BeautifulSoup object; parse with 'html.parser'
+    soup = bs(response.text, 'html.parser')
+    print(soup.prettify())
+    results = soup.find('article', class_="carousel_item")["style"].strip("background-image: url(' .jpg' );")
+    featured_image = (f'https://www.jpl.nasa.gov{results}.jpg')
+    
+    #Get current tweet with Mars Weather
+    url = 'https://twitter.com/marswxreport?lang=en'
+    # Retrieve page with the requests module
+    response = requests.get(url)
+
+    # Create BeautifulSoup object; parse with 'html.parser'
+    soup = bs(response.text, 'html.parser')
+
+    print(soup.prettify())
+
+    mars_weather = soup.find('div', class_="js-tweet-text-container").text.strip()
+    
+    #Pandas table HTML parsing for Mars information table
+    url = 'https://space-facts.com/mars/'
+    table = pd.read_html(url)
+    print(table[1])
+    mars = table[1]
+    mars_facts = mars.drop(columns=['Earth'])
+    mars_facts.rename(columns = {'Mars - Earth Comparison': 'Facts'}, inplace = True)
+    print(mars_facts)
+    #Convert Pandas's DF to HTML Table
+    mars_facts_html = mars_facts.to_html('mars_facts_table.html', index=False, justify="center")
+
+    hemisphere_image_urls = []
+    #get a list of all the hemispheres
+    url_links = browser.find_by_css("a.product-item h3")
+
+    #Loop through the links and click links to get image
+    for i in range(len(url_links)):
+        hemisphere = {}
+
+        #We need to find the elements in each loop
+        browser.find_by_css("a.product-item h3")[i].click()
+
+        #next find the sample image anchor tag and get href
+        sample_elem = browser.find_link_by_text('Sample').first
+        hemisphere['img_url'] = sample_elem['href']
+
+        #get hemisphere title
+        hemisphere['title'] = browser.find_by_css("h2.title").text
+
+        #Append hemisphere object to list
+        hemisphere_image_urls.append(hemisphere)
+
+        #Finally navigate back to start again on loop
+        browser.back()
+    # Store data in a dictionary
+    mars_data = {
+        "title": title,
+        "desc": desc,
+        "featured_image": featured_image,
+        "mars_weather": mars_weather}
+
+    # Close the browser after scraping
+    browser.quit()
+
+    # Return results
+    return mars_data
+
+    #,hemisphere_image_urls,mars_facts_html
