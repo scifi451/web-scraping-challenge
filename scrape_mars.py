@@ -100,49 +100,63 @@ def scrape_info ():
     mars_facts = mars_table.drop(columns=['Earth'])
 
     mars_facts.rename(columns = {'Mars - Earth Comparison': 'Facts'}, inplace = True)
-    mars_facts
+   
 
     #Convert Pandas's DataFrame to HTML Table
     mars_html=mars_facts.to_html(index=False, header=False)
-    mars_html
+   
 
     mars["facts"]=mars_html
-    mars
+
+    url = 'https://astrogeology.usgs.gov/search/results?q=hemisphere+enhanced&k1=target&v1=Mars'
+    # Retrieve page with the requests module
+    response = requests.get(url)
+
+    # Create BeautifulSoup object; parse with 'html.parser'
+    soup = bs(response.text, 'html.parser') 
+
+    results = soup.find('div', class_="full-content")
+
+    #Going to the main page for the Mars Hemisphere's
+    hemisphere_image_urls = []
+    url = 'https://astrogeology.usgs.gov/search/results?q=hemisphere+enhanced&k1=target&v1=Mars'
+    browser.visit(url)
+    # HTML object
+    html = browser.html
+    # Parse HTML with Beautiful Soup
+    soup = bs(html, 'html.parser')
+    hemispheres = soup.find_all('div', class_="item")
+    for hemisphere in hemispheres:
+        
+        hemisphere_dict = {}
+        link = hemisphere.find('a')
+        href = link['href']
+        print('--------------------------------------')
+        #print(hemisphere.text)
+        #print(href)
+        browser.visit('https://astrogeology.usgs.gov/' + href)
+        html2 = browser.html
+        soup2 = bs(html2, 'html.parser')
+        
+        #Finding the link for the hemisphere image once you click into the individual page
+        hem_image = soup2.find('div', class_="downloads").find('li').find('a')
+        hem_title= soup2.find('h2', class_="title").text
+        print(hem_image.get('href'))
+        #if want tiff image  print(hem_image.get('href').strip("full.jpg"))
+        print(hem_title)
+        
+        #Adding the elements we just grabbed to a dictionary.
+        hemisphere_dict['img_url'] = hem_image.get('href')
+        hemisphere_dict['title'] = hem_title= soup2.find('h2', class_="title").text
+        hemisphere_image_urls.append(hemisphere_dict)
+        mars["hemisphere"]=hemisphere_image_urls
+        
+        browser.back()
+
+
 
     return mars
     browser.quit()
 
-    # ## Hemisphere Images
-
-    # hemisphere_url = 'https://web.archive.org/web/20181114171728/https://astrogeology.usgs.gov/search/results?q=hemisphere+enhanced&k1=target&v1=Mars'
-    # browser.visit(hemisphere_url)
-    # time.sleep(2)
-    # hemisphere_image_urls = []
-    # url_links = browser.find_by_css('a.product-item h3')
-
-    # for i in range (len(url_links)):
-
-    #     #create a dictionary for each hemisphere
-    #     hemisphere={}
-    #     browser.find_by_css('a.product-item h3')[i].click()
-
-    #     #get hemisphere title
-    #     hemisphere[title] = browser.find_by_css("h2.title").text
-
-    #     #next find the sample image anchor tag and get the href 
-    #     sample_elem = browser.find_link_by_text('Sample').first
-    #     hemisphere['img_url'] = sample_elem['href']
-
-    #     #append hemisphere object to the list
-    #     hemisphere_image_urls.append(hemisphere)
-
-    #     #finally navigate back to start of loop
-    #     browser.back()
-
-    # mars["hemisphere"]=hemisphere_image_urls
-    # mars
-
-
 
     
-
